@@ -1,0 +1,41 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Generate Xcode Project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build Unsigned App
+        run: |
+          xcodebuild -project GlassCalc.xcodeproj \
+            -scheme GlassCalc \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/GlassCalc.app Payload/
+          zip -r GlassCalc.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlassCalc-IPA
+          path: GlassCalc.ipa
