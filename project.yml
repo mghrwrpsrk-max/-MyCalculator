@@ -8,10 +8,17 @@ targets:
     deploymentTarget: "15.0"
     sources:
       - CalculatorApp.swift
+      - path: Icon.png
+        buildPhase: resources
     info:
       path: Info.plist
       properties:
+        CFBundleDisplayName: "Glass Calc"
+        CFBundleName: "GlassCalc"
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        CFBundleIconFiles:
+          - Icon.png
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        CFBundleDisplayName: "Glass Calc"
