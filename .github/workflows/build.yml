@@ -10,17 +10,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and Sign IPA
+      - name: Build Official IPA Structure
         run: |
+          cat << 'EOF' > project.yml
+          name: GlassCalc
+          options:
+            bundleIdPrefix: com.custom
+          targets:
+            GlassCalc:
+              type: application
+              platform: iOS
+              deploymentTarget: "15.0"
+              sources:
+                - CalculatorApp.swift
+                - Assets.xcassets
+              settings:
+                base:
+                  ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+                  PRODUCT_BUNDLE_IDENTIFIER: com.custom.glasscalc
+                  GENERATE_INFOPLIST_FILE: YES
+                  INFOPLIST_KEY_CFBundleDisplayName: GlassCalc
+                  INFOPLIST_KEY_UILaunchScreen_Generation: YES
+                  INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+          EOF
+          mkdir -p Assets.xcassets/AppIcon.appiconset
+          echo '{"info":{"author":"xcode","version":1}}' > Assets.xcassets/Contents.json
+          echo '{"images":[{"filename":"icon120.png","idiom":"iphone","scale":"2x","size":"60x60"},{"filename":"icon180.png","idiom":"iphone","scale":"3x","size":"60x60"},{"filename":"icon1024.png","idiom":"ios-marketing","scale":"1x","size":"1024x1024"}],"info":{"author":"xcode","version":1}}' > Assets.xcassets/AppIcon.appiconset/Contents.json
+          sips -s format png -z 120 120 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out Assets.xcassets/AppIcon.appiconset/icon120.png
+          sips -s format png -z 180 180 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out Assets.xcassets/AppIcon.appiconset/icon180.png
+          sips -s format png -z 1024 1024 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out Assets.xcassets/AppIcon.appiconset/icon1024.png
           brew install xcodegen
           xcodegen generate
           xcodebuild -project GlassCalc.xcodeproj -scheme GlassCalc -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
-          sips -s format png -z 120 120 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out build/Build/Products/Release-iphoneos/GlassCalc.app/AppIcon60x60@2x.png
-          sips -s format png -z 180 180 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns --out build/Build/Products/Release-iphoneos/GlassCalc.app/AppIcon60x60@3x.png
           codesign --force --deep --sign - build/Build/Products/Release-iphoneos/GlassCalc.app
           mkdir -p Payload
-          cp -r build/Build/Products/Release-iphoneos/GlassCalc.app Payload/
-          zip -qry GlassCalc.ipa Payload
+          cp -Rp build/Build/Products/Release-iphoneos/GlassCalc.app Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload GlassCalc.ipa
 
       - uses: actions/upload-artifact@v4
         with:
