@@ -15,29 +15,9 @@ jobs:
       - name: Create Standard Asset Catalog
         run: |
           mkdir -p Assets.xcassets/AppIcon.appiconset
-          cat << 'EOF' > Assets.xcassets/Contents.json
-          { "info" : { "author" : "xcode", "version" : 1 } }
-          EOF
-          cat << 'EOF' > Assets.xcassets/AppIcon.appiconset/Contents.json
-          {
-            "images" : [
-              { "filename" : "Icon-60@2x.png", "idiom" : "iphone", "scale" : "2x", "size" : "60x60" },
-              { "filename" : "Icon-60@3x.png", "idiom" : "iphone", "scale" : "3x", "size" : "60x60" },
-              { "filename" : "Icon-1024.png", "idiom" : "ios-marketing", "scale" : "1x", "size" : "1024x1024" }
-            ],
-            "info" : { "author" : "xcode", "version" : 1 }
-          }
-          EOF
-          python3 -c '
-          import struct, zlib
-          def make_png(w, h):
-              raw = b"".join(b"\x00" + b"\x1e\x1b\x4b\xff" * w for _ in range(h))
-              def chunk(t, d): return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
-              return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
-          open("Assets.xcassets/AppIcon.appiconset/Icon-60@2x.png", "wb").write(make_png(120, 120))
-          open("Assets.xcassets/AppIcon.appiconset/Icon-60@3x.png", "wb").write(make_png(180, 180))
-          open("Assets.xcassets/AppIcon.appiconset/Icon-1024.png", "wb").write(make_png(1024, 1024))
-          '
+          echo '{"info":{"author":"xcode","version":1}}' > Assets.xcassets/Contents.json
+          echo '{"images":[{"filename":"Icon-60@2x.png","idiom":"iphone","scale":"2x","size":"60x60"},{"filename":"Icon-60@3x.png","idiom":"iphone","scale":"3x","size":"60x60"},{"filename":"Icon-1024.png","idiom":"ios-marketing","scale":"1x","size":"1024x1024"}],"info":{"author":"xcode","version":1}}' > Assets.xcassets/AppIcon.appiconset/Contents.json
+          python3 -c 'import struct,zlib; m=lambda w,h: b"\x89PNG\r\n\x1a\n"+b"".join([struct.pack(">I",len(d))+t+d+struct.pack(">I",zlib.crc32(t+d)&0xffffffff) for t,d in [(b"IHDR",struct.pack(">IIBBBBB",w,h,8,6,0,0,0)),(b"IDAT",zlib.compress(b"".join(b"\x00"+b"\x1e\x1b\x4b\xff"*w for _ in range(h)))),(b"IEND",b"")]]); open("Assets.xcassets/AppIcon.appiconset/Icon-60@2x.png","wb").write(m(120,120)); open("Assets.xcassets/AppIcon.appiconset/Icon-60@3x.png","wb").write(m(180,180)); open("Assets.xcassets/AppIcon.appiconset/Icon-1024.png","wb").write(m(1024,1024))'
 
       - name: Generate Xcode Project
         run: |
@@ -46,19 +26,13 @@ jobs:
 
       - name: Build App
         run: |
-          xcodebuild -project GlassCalc.xcodeproj \
-            -scheme GlassCalc \
-            -sdk iphoneos \
-            -configuration Release \
-            -derivedDataPath build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+          xcodebuild -project GlassCalc.xcodeproj -scheme GlassCalc -sdk iphoneos -configuration Release -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
       - name: Package IPA
         run: |
           mkdir -p Payload
           cp -r build/Build/Products/Release-iphoneos/GlassCalc.app Payload/
+          codesign --force --deep --sign - Payload/GlassCalc.app
           zip -qry GlassCalc.ipa Payload
 
       - name: Upload IPA
