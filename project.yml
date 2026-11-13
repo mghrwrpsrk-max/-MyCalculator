@@ -1,0 +1,17 @@
+name: GlassCalc
+options:
+  bundleIdPrefix: com.custom
+targets:
+  GlassCalc:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - CalculatorApp.swift
+    info:
+      path: Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        CFBundleDisplayName: "Glass Calc"
